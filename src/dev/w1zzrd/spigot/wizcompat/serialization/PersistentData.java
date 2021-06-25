@@ -43,8 +43,14 @@ public class PersistentData {
      * @return Data at the given path, if available, else the default value
      */
     public <T extends ConfigurationSerializable> T loadData(final String path, final DefaultGetter<T> defaultValue) {
-        final T value = (T) config.get(path);
-        return value == null ? defaultValue.get() : value;
+        T value = (T) config.get(path);
+
+        if (value == null) {
+            value = defaultValue.get();
+            config.set(path, value);
+        }
+
+        return value;
     }
 
     /**
