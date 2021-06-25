@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="SpigotWizCompat:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/SpigotWizCompat_jar</output-path>
+    <root id="archive" name="SpigotWizCompat.jar">
+      <element id="module-output" name="SpigotWizCompat" />
+      <element id="dir-copy" path="$PROJECT_DIR$/res" />
+    </root>
+  </artifact>
+</component>

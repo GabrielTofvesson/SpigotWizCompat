@@ -1,0 +1,5 @@
+name: WizCompat
+version: 1.0.0
+author: IKEA_Jesus
+main: dev.w1zzrd.spigot.wizcompat.WizCompatPlugin
+api-version: 1.16
