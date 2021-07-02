@@ -9,36 +9,8 @@ import static dev.w1zzrd.spigot.wizcompat.packet.Reflect.*;
 public final class EntityCreator {
     private EntityCreator() { throw new UnsupportedOperationException("Functional class"); }
 
-    private static Package getNativeMonsterPackage(final Player from) {
-        // Given player wll be an instance of CraftPlayer
-        final Package bukkitEntityPackage = from.getClass().getPackage();
-        final Class<?> craftShulker = loadClass(bukkitEntityPackage, "CraftShulker");
-
-        assert craftShulker != null;
-
-        // CraftShulker constructor accepts minecraft EntityShulker instance as second argument
-        final Class<?> nativeEntityShulker = craftShulker.getDeclaredConstructors()[0].getParameterTypes()[1];
-
-        // EntityShulker is classified squarely as a monster, so it should be grouped with all other hostiles
-        return nativeEntityShulker.getPackage();
-    }
-
-    private static Package getNativePacketPackage(final Player from) {
-        final Method sendPacket = findDeclaredMethod(
-                reflectGetField(reflectGetField(from, "entity"), "playerConnection", "networkManager").getClass(),
-                new String[]{ "sendPacket" },
-                new Object[]{ null }
-        );
-
-        return sendPacket.getParameterTypes()[0].getPackage();
-    }
-
     private static Object getMinecraftServerFromWorld(final Object worldServer) {
         return reflectGetField(worldServer, "server", "D");
-    }
-
-    private static Object getWorldServerFromPlayer(final Player from) {
-        return reflectGetField(from.getWorld(), "world");
     }
 
     private static Object getMonsterEntityType(final Class<?> entityClass) {
@@ -51,7 +23,7 @@ public final class EntityCreator {
         final Package versionPackage = getNativeMonsterPackage(target);
         final Class<?> type_Entity = loadClass(versionPackage, entityClassName);
 
-        final Object nativeWorld = getWorldServerFromPlayer(target);
+        final Object nativeWorld = Players.getWorldServerFromPlayer(target);
         assert type_Entity != null;
         final Object entityType = getMonsterEntityType(type_Entity);
 
@@ -66,13 +38,9 @@ public final class EntityCreator {
         return createFakeMonster(target, "EntityShulker");
     }
 
-    public static void sendPacket(final Player target, final Object packet) {
-        reflectInvoke(reflectGetField(reflectGetField(target, "entity"), "playerConnection", "networkManager"), new String[]{ "sendPacket" }, packet);
-    }
-
     public static void sendEntitySpawnPacket(final Player target, final Object entity) {
         final Package versionPackage = getNativePacketPackage(target);
-        sendPacket(target, reflectConstruct(loadClass(versionPackage, "PacketPlayOutSpawnEntityLiving", "game.PacketPlayOutSpawnEntityLiving"), entity));
+        Packets.sendPacket(target, reflectConstruct(loadClass(versionPackage, "PacketPlayOutSpawnEntityLiving", "game.PacketPlayOutSpawnEntityLiving"), entity));
     }
 
     public static void sendEntityMetadataPacket(final Player target, final Object entity) {
@@ -94,7 +62,7 @@ public final class EntityCreator {
             );
         }
 
-        sendPacket(
+        Packets.sendPacket(
                 target,
                 constr1
         );
@@ -102,7 +70,7 @@ public final class EntityCreator {
 
     public static void sendEntityDespawnPacket(final Player target, final int entityID) {
         final Package versionPackage = getNativePacketPackage(target);
-        sendPacket(target, reflectConstruct(loadClass(versionPackage, "PacketPlayOutEntityDestroy", "game.PacketPlayOutEntityDestroy"), entityID));
+        Packets.sendPacket(target, reflectConstruct(loadClass(versionPackage, "PacketPlayOutEntityDestroy", "game.PacketPlayOutEntityDestroy"), entityID));
     }
 
     public static int getEntityID(final Object entity) {

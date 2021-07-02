@@ -1,5 +1,7 @@
 package dev.w1zzrd.spigot.wizcompat.packet;
 
+import org.bukkit.entity.Player;
+
 import java.lang.reflect.*;
 
 public final class Reflect {
@@ -17,10 +19,13 @@ public final class Reflect {
 
         do {
             for (final Method check : current.getDeclaredMethods())
-                if (contains(methodNames, check.getName()) && argsMatch(check.getParameterTypes(), args))
+                if ((methodNames.length == 0 || contains(methodNames, check.getName())) && argsMatch(check.getParameterTypes(), args))
                     return check;
 
             current = current.getSuperclass();
+
+            if (current == null)
+                return null;
         } while (true);
     }
 
@@ -29,10 +34,13 @@ public final class Reflect {
 
         do {
             for (final Field check : current.getDeclaredFields())
-                if (contains(fieldNames, check.getName()) && (expectedType == null || check.getType().equals(expectedType)))
+                if ((fieldNames.length == 0 || contains(fieldNames, check.getName())) && (expectedType == null || check.getType().equals(expectedType)))
                     return check;
 
             current = current.getSuperclass();
+
+            if (current == null)
+                return null;
         } while (true);
     }
 
@@ -56,6 +64,19 @@ public final class Reflect {
         return null;
     }
 
+    public static Object reflectInvokeStatic(final Class<?> target, final String[] methodNames, final Object... args) {
+        final Method targetMethod = findDeclaredMethod(target, methodNames, args);
+        targetMethod.setAccessible(true);
+
+        try {
+            return targetMethod.invoke(null, args);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
     public static void reflectSetStaticField(final Class<?> target, final Object value, final String... fieldNames) {
         reflectSetStaticField(target, null, value, fieldNames);
     }
@@ -71,7 +92,7 @@ public final class Reflect {
     }
 
     public static <T> T reflectGetStaticField(final Class<?> target, final String... fieldNames) {
-        return (T) reflectGetStaticField(target, null, fieldNames);
+        return reflectGetStaticField(target, null, fieldNames);
     }
 
     public static <T, R> T reflectGetGenericStaticField(final Class<?> target, final Class<T> fieldType, final Class<R> genericType) {
@@ -192,6 +213,30 @@ public final class Reflect {
                 (primitive == long.class && objectType == Long.class) ||
                 (primitive == float.class && objectType == Float.class) ||
                 (primitive == double.class && objectType == Double.class);
+    }
+
+    static Package getNativeMonsterPackage(final Player from) {
+        // Given player wll be an instance of CraftPlayer
+        final Package bukkitEntityPackage = from.getClass().getPackage();
+        final Class<?> craftShulker = loadClass(bukkitEntityPackage, "CraftShulker");
+
+        assert craftShulker != null;
+
+        // CraftShulker constructor accepts minecraft EntityShulker instance as second argument
+        final Class<?> nativeEntityShulker = craftShulker.getDeclaredConstructors()[0].getParameterTypes()[1];
+
+        // EntityShulker is classified squarely as a monster, so it should be grouped with all other hostiles
+        return nativeEntityShulker.getPackage();
+    }
+
+    static Package getNativePacketPackage(final Player from) {
+        final Method sendPacket = findDeclaredMethod(
+                reflectGetField(reflectGetField(from, "entity"), "playerConnection", "networkManager").getClass(),
+                new String[]{ "sendPacket" },
+                new Object[]{ null }
+        );
+
+        return sendPacket.getParameterTypes()[0].getPackage();
     }
 
     private interface DeclarationGetter<T, R> {
