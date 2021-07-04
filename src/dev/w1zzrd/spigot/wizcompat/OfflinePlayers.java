@@ -1,6 +1,7 @@
 package dev.w1zzrd.spigot.wizcompat;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -85,11 +86,12 @@ public final class OfflinePlayers {
      * @param ignoreCase Whether or not to respect case-sensitivity
      * @return Matching player instance, or null if server does not know of a player with the given name
      */
-    public static Player getKnownPlayer(final Server server, final String playerName, final boolean ignoreCase, final boolean lazyFileLoading) {
+    public static OfflinePlayer getKnownPlayer(final Server server, final String playerName, final boolean ignoreCase, final boolean lazyFileLoading) {
         for (final UUID uuid : getAllKnownPlayers(server, lazyFileLoading)) {
-            final Player player = Bukkit.getPlayer(uuid);
+            final OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+            final String name = player.getName();
 
-            if (player != null && ((ignoreCase && player.getName().equalsIgnoreCase(playerName)) || (!ignoreCase && player.getName().equals(playerName))))
+            if (name != null && (ignoreCase && name.equalsIgnoreCase(playerName) || !ignoreCase && name.equals(playerName)))
                 return player;
         }
 
@@ -102,7 +104,7 @@ public final class OfflinePlayers {
      * @param playerName Name of player to find
      * @return Matching player instance, or null if server does not know of a player with the given name
      */
-    public static Player getKnownPlayer(final Server server, final String playerName) {
+    public static OfflinePlayer getKnownPlayer(final Server server, final String playerName) {
         return getKnownPlayer(server, playerName, true, true);
     }
 }
