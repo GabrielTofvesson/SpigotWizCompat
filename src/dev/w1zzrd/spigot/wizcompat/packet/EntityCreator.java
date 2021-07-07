@@ -69,8 +69,17 @@ public final class EntityCreator {
     }
 
     public static void sendEntityDespawnPacket(final Player target, final int entityID) {
+        sendEntityDespawnPackets(target, entityID);
+    }
+
+    public static void sendEntityDespawnPackets(final Player target, final int... entityIDs) {
         final Package versionPackage = getNativePacketPackage(target);
-        Packets.sendPacket(target, reflectConstruct(loadClass(versionPackage, "PacketPlayOutEntityDestroy", "game.PacketPlayOutEntityDestroy"), entityID));
+        try {
+            Packets.sendPacket(target, reflectConstruct(loadClass(versionPackage, "PacketPlayOutEntityDestroy", "game.PacketPlayOutEntityDestroy"), new Object[]{ entityIDs }));
+        } catch (Throwable t) {
+            for (int entityID : entityIDs)
+                Packets.sendPacket(target, reflectConstruct(loadClass(versionPackage, "PacketPlayOutEntityDestroy", "game.PacketPlayOutEntityDestroy"), entityID));
+        }
     }
 
     public static int getEntityID(final Object entity) {
