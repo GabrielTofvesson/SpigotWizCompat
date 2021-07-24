@@ -1,6 +1,9 @@
 package dev.w1zzrd.spigot.wizcompat.packet;
 
 import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Array;
@@ -73,6 +76,36 @@ public final class Players {
         }
 
         return reflectGetField(player, "entity");
+    }
+
+    public static void openSignEditor(final Player target, final Location where) {
+        // Must edit a non-editable sign
+        final BlockState targetState = where.getBlock().getState();
+        if (!(targetState instanceof Sign) || ((Sign)targetState).isEditable())
+            return;
+
+        final Object tileSign = reflectGetField(targetState, "tileEntity");
+
+        // Make editable by player
+        reflectInvoke(tileSign, new String[]{ "a" }, target.getUniqueId());
+        reflectInvoke(tileSign, new String[]{ "a" }, true);
+
+        final Class<?> type_PacketPlayOutOpenSignEditor = loadClass(
+                getNativePacketPackage(target),
+                "PacketPlayOutOpenSignEditor", "game.PacketPlayOutOpenSignEditor"
+        );
+        assert type_PacketPlayOutOpenSignEditor != null;
+
+        Packets.sendPacket(
+                target,
+                reflectConstruct(
+                        type_PacketPlayOutOpenSignEditor,
+                        reflectConstruct(
+                                type_PacketPlayOutOpenSignEditor.getDeclaredFields()[0].getType(), // Only declares one field
+                                where.getBlockX(),
+                                where.getBlockY(),
+                                where.getBlockZ()
+                        )));
     }
 
 }
